@@ -1,0 +1,6 @@
+{
+  "name": "Recibos Fuera de Nómina - Blindaje Legal y SENIAT",
+  "description": "Sistema para emisión de recibos de bonos no salariales, entrega de bolsas de comida, contratos y adendas con blindaje legal LOTTT (Art. 105), Sentencia 523 TSJ y justificación fiscal SENIAT / ISLR.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

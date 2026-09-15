@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+@media print {
+  body {
+    background: white !important;
+    color: #111827 !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  .print-container {
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    background: white !important;
+  }
+  /* Toner saving: Remove heavy dark fills and ensure clean thin lines */
+  .print-container * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+  .toner-save-border {
+    border-color: #cbd5e1 !important;
+  }
+  @page {
+    size: letter portrait;
+    margin: 1.2cm 1.2cm 1.2cm 1.2cm;
+  }
+}
+
+@media screen {
+  .print-only {
+    display: none !important;
+  }
+}
+
