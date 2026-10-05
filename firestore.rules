@@ -1,0 +1,384 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net (Default-Deny Catch-All)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Hardened Global Primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    // 1. Validation Blueprint: CompanyDoc
+    function isValidCompany(data) {
+      return data.keys().hasAll([
+          'ownerId', 'companyId', 'razonSocial', 'rif', 'direccionFiscal',
+          'ciudad', 'registroMercantil', 'representanteLegal', 'cedulaRepresentante',
+          'cargoRepresentante', 'tasaBCV', 'fechaTasaBCV', 'telefono', 'email',
+          'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId', 'companyId', 'razonSocial', 'rif', 'direccionFiscal',
+          'ciudad', 'registroMercantil', 'representanteLegal', 'cedulaRepresentante',
+          'cargoRepresentante', 'tasaBCV', 'fechaTasaBCV', 'telefono', 'email',
+          'createdAt', 'updatedAt'
+        ])
+        && data.ownerId == request.auth.uid
+        && isValidId(data.ownerId)
+        && isValidId(data.companyId)
+        && data.razonSocial is string && data.razonSocial.size() >= 1 && data.razonSocial.size() <= 200
+        && data.rif is string && data.rif.size() >= 1 && data.rif.size() <= 40
+        && data.direccionFiscal is string && data.direccionFiscal.size() <= 500
+        && data.ciudad is string && data.ciudad.size() <= 100
+        && data.registroMercantil is string && data.registroMercantil.size() <= 300
+        && data.representanteLegal is string && data.representanteLegal.size() <= 150
+        && data.cedulaRepresentante is string && data.cedulaRepresentante.size() <= 40
+        && data.cargoRepresentante is string && data.cargoRepresentante.size() <= 100
+        && (data.tasaBCV is int || data.tasaBCV is float) && data.tasaBCV > 0 && data.tasaBCV <= 1000000
+        && data.fechaTasaBCV is string && data.fechaTasaBCV.size() <= 30
+        && data.telefono is string && data.telefono.size() <= 50
+        && data.email is string && data.email.size() <= 150
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // 2. Validation Blueprint: EmployeeDoc
+    function isValidEmployee(data) {
+      return data.keys().hasAll([
+          'ownerId', 'employeeId', 'companyId', 'cedula', 'fullName',
+          'cargo', 'departamento', 'salarioBaseBs', 'isDirector', 'banco',
+          'cuentaBancaria', 'fechaIngreso', 'direccion', 'nacionalidad',
+          'estadoCivil', 'adendaFirmada', 'fechaFirmaAdenda', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId', 'employeeId', 'companyId', 'cedula', 'fullName',
+          'cargo', 'departamento', 'salarioBaseBs', 'isDirector', 'banco',
+          'cuentaBancaria', 'fechaIngreso', 'direccion', 'nacionalidad',
+          'estadoCivil', 'adendaFirmada', 'fechaFirmaAdenda', 'createdAt', 'updatedAt'
+        ])
+        && data.ownerId == request.auth.uid
+        && isValidId(data.ownerId)
+        && isValidId(data.employeeId)
+        && data.companyId is string && data.companyId.size() <= 128
+        && data.cedula is string && data.cedula.size() >= 1 && data.cedula.size() <= 40
+        && data.fullName is string && data.fullName.size() >= 1 && data.fullName.size() <= 150
+        && data.cargo is string && data.cargo.size() <= 120
+        && data.departamento is string && data.departamento.size() <= 120
+        && (data.salarioBaseBs is int || data.salarioBaseBs is float) && data.salarioBaseBs >= 0 && data.salarioBaseBs <= 1000000000
+        && data.isDirector is bool
+        && data.banco is string && data.banco.size() <= 120
+        && data.cuentaBancaria is string && data.cuentaBancaria.size() <= 60
+        && data.fechaIngreso is string && data.fechaIngreso.size() <= 30
+        && data.direccion is string && data.direccion.size() <= 400
+        && data.nacionalidad is string && data.nacionalidad.size() <= 60
+        && data.estadoCivil is string && data.estadoCivil.size() <= 60
+        && data.adendaFirmada is bool
+        && data.fechaFirmaAdenda is string && data.fechaFirmaAdenda.size() <= 30
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // 3. Validation Blueprint: ReceiptDoc
+    function isValidReceipt(data) {
+      return data.keys().hasAll([
+          'ownerId', 'receiptId', 'companyId', 'receiptNumber', 'employeeId',
+          'employeeName', 'employeeCedula', 'employeeCargo', 'category',
+          'conceptTitle', 'conceptDescription', 'amountUSD', 'tasaBCV',
+          'amountBs', 'paymentMethod', 'bankName', 'referenceNumber',
+          'issueDate', 'coveragePeriod', 'grocerySummary', 'clinicalInvoiceNumber',
+          'clinicalInvoiceRIF', 'patientName', 'patientRelation', 'triadStatus',
+          'dateTransferred', 'dateArchivedPhysical', 'archivedNotes',
+          'hasWetThumbprint', 'hasPhysicalSignature', 'salarioBaseBsAtTime',
+          'desalarizationRiskRatio', 'riskLevel', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId', 'receiptId', 'companyId', 'receiptNumber', 'employeeId',
+          'employeeName', 'employeeCedula', 'employeeCargo', 'category',
+          'conceptTitle', 'conceptDescription', 'amountUSD', 'tasaBCV',
+          'amountBs', 'paymentMethod', 'bankName', 'referenceNumber',
+          'issueDate', 'coveragePeriod', 'grocerySummary', 'clinicalInvoiceNumber',
+          'clinicalInvoiceRIF', 'patientName', 'patientRelation', 'triadStatus',
+          'dateTransferred', 'dateArchivedPhysical', 'archivedNotes',
+          'hasWetThumbprint', 'hasPhysicalSignature', 'salarioBaseBsAtTime',
+          'desalarizationRiskRatio', 'riskLevel', 'createdAt', 'updatedAt'
+        ])
+        && data.ownerId == request.auth.uid
+        && isValidId(data.ownerId)
+        && isValidId(data.receiptId)
+        && data.companyId is string && data.companyId.size() <= 128
+        && data.receiptNumber is string && data.receiptNumber.size() >= 1 && data.receiptNumber.size() <= 60
+        && data.employeeId is string && data.employeeId.size() <= 128
+        && data.employeeName is string && data.employeeName.size() <= 150
+        && data.employeeCedula is string && data.employeeCedula.size() <= 40
+        && data.employeeCargo is string && data.employeeCargo.size() <= 120
+        && data.category is string && data.category.size() <= 60
+        && data.conceptTitle is string && data.conceptTitle.size() >= 1 && data.conceptTitle.size() <= 300
+        && data.conceptDescription is string && data.conceptDescription.size() <= 2000
+        && (data.amountUSD is int || data.amountUSD is float) && data.amountUSD >= 0 && data.amountUSD <= 10000000
+        && (data.tasaBCV is int || data.tasaBCV is float) && data.tasaBCV > 0 && data.tasaBCV <= 1000000
+        && (data.amountBs is int || data.amountBs is float) && data.amountBs >= 0 && data.amountBs <= 10000000000
+        && data.paymentMethod is string && data.paymentMethod.size() <= 60
+        && data.bankName is string && data.bankName.size() <= 120
+        && data.referenceNumber is string && data.referenceNumber.size() <= 100
+        && data.issueDate is string && data.issueDate.size() <= 30
+        && data.coveragePeriod is string && data.coveragePeriod.size() <= 80
+        && data.grocerySummary is string && data.grocerySummary.size() <= 2000
+        && data.clinicalInvoiceNumber is string && data.clinicalInvoiceNumber.size() <= 80
+        && data.clinicalInvoiceRIF is string && data.clinicalInvoiceRIF.size() <= 40
+        && data.patientName is string && data.patientName.size() <= 150
+        && data.patientRelation is string && data.patientRelation.size() <= 80
+        && data.triadStatus is string && data.triadStatus.size() <= 40
+        && data.dateTransferred is string && data.dateTransferred.size() <= 30
+        && data.dateArchivedPhysical is string && data.dateArchivedPhysical.size() <= 30
+        && data.archivedNotes is string && data.archivedNotes.size() <= 500
+        && data.hasWetThumbprint is bool
+        && data.hasPhysicalSignature is bool
+        && (data.salarioBaseBsAtTime is int || data.salarioBaseBsAtTime is float) && data.salarioBaseBsAtTime >= 0
+        && (data.desalarizationRiskRatio is int || data.desalarizationRiskRatio is float) && data.desalarizationRiskRatio >= 0
+        && data.riskLevel is string && data.riskLevel.size() <= 20
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // 4. Validation Blueprint: InvoiceDoc
+    function isValidInvoice(data) {
+      return data.keys().hasAll([
+          'ownerId', 'invoiceId', 'companyId', 'invoiceNumber', 'providerName',
+          'providerRIF', 'invoiceDate', 'totalAmountBs', 'totalAmountUSD',
+          'totalBasketsCovered', 'itemsDescription', 'hasFiscalControlSENIAT',
+          'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId', 'invoiceId', 'companyId', 'invoiceNumber', 'providerName',
+          'providerRIF', 'invoiceDate', 'totalAmountBs', 'totalAmountUSD',
+          'totalBasketsCovered', 'itemsDescription', 'hasFiscalControlSENIAT',
+          'createdAt', 'updatedAt'
+        ])
+        && data.ownerId == request.auth.uid
+        && isValidId(data.ownerId)
+        && isValidId(data.invoiceId)
+        && data.companyId is string && data.companyId.size() <= 128
+        && data.invoiceNumber is string && data.invoiceNumber.size() >= 1 && data.invoiceNumber.size() <= 80
+        && data.providerName is string && data.providerName.size() >= 1 && data.providerName.size() <= 200
+        && data.providerRIF is string && data.providerRIF.size() <= 40
+        && data.invoiceDate is string && data.invoiceDate.size() <= 30
+        && (data.totalAmountBs is int || data.totalAmountBs is float) && data.totalAmountBs >= 0
+        && (data.totalAmountUSD is int || data.totalAmountUSD is float) && data.totalAmountUSD >= 0
+        && (data.totalBasketsCovered is int || data.totalBasketsCovered is float) && data.totalBasketsCovered >= 0
+        && data.itemsDescription is string && data.itemsDescription.size() <= 2000
+        && data.hasFiscalControlSENIAT is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // 5. Validation Blueprint: CloudFileDoc
+    function isValidCloudFile(data) {
+      return data.keys().hasAll([
+          'ownerId', 'fileId', 'companyId', 'companyRif', 'companyName',
+          'fileName', 'fileType', 'mimeType', 'fileSize', 'relatedReceiptId',
+          'relatedEmployeeName', 'relatedEmployeeCedula', 'description',
+          'dataUrl', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId', 'fileId', 'companyId', 'companyRif', 'companyName',
+          'fileName', 'fileType', 'mimeType', 'fileSize', 'relatedReceiptId',
+          'relatedEmployeeName', 'relatedEmployeeCedula', 'description',
+          'dataUrl', 'createdAt', 'updatedAt'
+        ])
+        && data.ownerId == request.auth.uid
+        && isValidId(data.ownerId)
+        && isValidId(data.fileId)
+        && data.companyId is string && data.companyId.size() <= 128
+        && data.companyRif is string && data.companyRif.size() <= 40
+        && data.companyName is string && data.companyName.size() <= 200
+        && data.fileName is string && data.fileName.size() >= 1 && data.fileName.size() <= 250
+        && data.fileType is string && data.fileType.size() <= 60
+        && (
+          data.fileType == 'recibo_pdf' ||
+          data.fileType == 'recibo_word' ||
+          data.fileType == 'adenda_contrato' ||
+          data.fileType == 'factura_seniat' ||
+          data.fileType == 'expediente_escaneado' ||
+          data.fileType == 'reporte_excel' ||
+          data.fileType == 'otro_documento'
+        )
+        && data.mimeType is string && data.mimeType.size() <= 120
+        && (data.fileSize is int || data.fileSize is float) && data.fileSize >= 0 && data.fileSize <= 750000
+        && data.relatedReceiptId is string && data.relatedReceiptId.size() <= 128
+        && data.relatedEmployeeName is string && data.relatedEmployeeName.size() <= 150
+        && data.relatedEmployeeCedula is string && data.relatedEmployeeCedula.size() <= 40
+        && data.description is string && data.description.size() <= 1000
+        && data.dataUrl is string && data.dataUrl.size() <= 900000
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // Collection: /companies/{companyId}
+    match /companies/{companyId} {
+      allow get: if isSignedIn() && isValidId(companyId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isVerifiedUser()
+        && isValidId(companyId)
+        && isValidCompany(incoming())
+        && incoming().companyId == companyId
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser()
+        && isValidId(companyId)
+        && isValidCompany(incoming())
+        && existing().ownerId == request.auth.uid
+        && incoming().ownerId == existing().ownerId
+        && incoming().companyId == existing().companyId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'razonSocial', 'rif', 'direccionFiscal', 'ciudad', 'registroMercantil',
+            'representanteLegal', 'cedulaRepresentante', 'cargoRepresentante',
+            'tasaBCV', 'fechaTasaBCV', 'telefono', 'email', 'updatedAt'
+          ])
+        );
+      allow delete: if isVerifiedUser() && isValidId(companyId) && existing().ownerId == request.auth.uid;
+    }
+
+    // Collection: /employees/{employeeId}
+    match /employees/{employeeId} {
+      allow get: if isSignedIn() && isValidId(employeeId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isVerifiedUser()
+        && isValidId(employeeId)
+        && isValidEmployee(incoming())
+        && incoming().employeeId == employeeId
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser()
+        && isValidId(employeeId)
+        && isValidEmployee(incoming())
+        && existing().ownerId == request.auth.uid
+        && incoming().ownerId == existing().ownerId
+        && incoming().employeeId == existing().employeeId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'companyId', 'cedula', 'fullName', 'cargo', 'departamento',
+            'salarioBaseBs', 'isDirector', 'banco', 'cuentaBancaria',
+            'fechaIngreso', 'direccion', 'nacionalidad', 'estadoCivil',
+            'adendaFirmada', 'fechaFirmaAdenda', 'updatedAt'
+          ])
+        );
+      allow delete: if isVerifiedUser() && isValidId(employeeId) && existing().ownerId == request.auth.uid;
+    }
+
+    // Collection: /receipts/{receiptId}
+    match /receipts/{receiptId} {
+      allow get: if isSignedIn() && isValidId(receiptId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isVerifiedUser()
+        && isValidId(receiptId)
+        && isValidReceipt(incoming())
+        && incoming().receiptId == receiptId
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser()
+        && isValidId(receiptId)
+        && isValidReceipt(incoming())
+        && existing().ownerId == request.auth.uid
+        && incoming().ownerId == existing().ownerId
+        && incoming().receiptId == existing().receiptId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'companyId', 'receiptNumber', 'employeeId', 'employeeName',
+            'employeeCedula', 'employeeCargo', 'category', 'conceptTitle',
+            'conceptDescription', 'amountUSD', 'tasaBCV', 'amountBs',
+            'paymentMethod', 'bankName', 'referenceNumber', 'issueDate',
+            'coveragePeriod', 'grocerySummary', 'clinicalInvoiceNumber',
+            'clinicalInvoiceRIF', 'patientName', 'patientRelation',
+            'triadStatus', 'dateTransferred', 'dateArchivedPhysical',
+            'archivedNotes', 'hasWetThumbprint', 'hasPhysicalSignature',
+            'salarioBaseBsAtTime', 'desalarizationRiskRatio', 'riskLevel', 'updatedAt'
+          ])
+        );
+      allow delete: if isVerifiedUser() && isValidId(receiptId) && existing().ownerId == request.auth.uid;
+    }
+
+    // Collection: /invoices/{invoiceId}
+    match /invoices/{invoiceId} {
+      allow get: if isSignedIn() && isValidId(invoiceId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isVerifiedUser()
+        && isValidId(invoiceId)
+        && isValidInvoice(incoming())
+        && incoming().invoiceId == invoiceId
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser()
+        && isValidId(invoiceId)
+        && isValidInvoice(incoming())
+        && existing().ownerId == request.auth.uid
+        && incoming().ownerId == existing().ownerId
+        && incoming().invoiceId == existing().invoiceId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'companyId', 'invoiceNumber', 'providerName', 'providerRIF',
+            'invoiceDate', 'totalAmountBs', 'totalAmountUSD',
+            'totalBasketsCovered', 'itemsDescription', 'hasFiscalControlSENIAT', 'updatedAt'
+          ])
+        );
+      allow delete: if isVerifiedUser() && isValidId(invoiceId) && existing().ownerId == request.auth.uid;
+    }
+
+    // Collection: /cloud_files/{fileId}
+    match /cloud_files/{fileId} {
+      allow get: if isSignedIn() && isValidId(fileId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isVerifiedUser()
+        && isValidId(fileId)
+        && isValidCloudFile(incoming())
+        && incoming().fileId == fileId
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser()
+        && isValidId(fileId)
+        && isValidCloudFile(incoming())
+        && existing().ownerId == request.auth.uid
+        && incoming().ownerId == existing().ownerId
+        && incoming().fileId == existing().fileId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'companyId', 'companyRif', 'companyName', 'fileName', 'fileType',
+            'mimeType', 'fileSize', 'relatedReceiptId', 'relatedEmployeeName',
+            'relatedEmployeeCedula', 'description', 'dataUrl', 'updatedAt'
+          ])
+        );
+      allow delete: if isVerifiedUser() && isValidId(fileId) && existing().ownerId == request.auth.uid;
+    }
+
+  }
+}

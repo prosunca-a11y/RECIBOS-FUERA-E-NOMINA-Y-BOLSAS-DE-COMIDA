@@ -41,6 +41,14 @@ export const ReceiptGenerator: React.FC<ReceiptGeneratorProps> = ({
   const [patientName, setPatientName] = useState<string>('');
   const [patientRelation, setPatientRelation] = useState<string>('Hijo menor');
 
+  // Custom RRHH Benefit Category fields (Art. 105 LOTTT)
+  const [customBenefitTitle, setCustomBenefitTitle] = useState<string>(
+    'Beneficio Social Asistencial No Remunerativo (Art. 105 LOTTT)'
+  );
+  const [customBenefitConcept, setCustomBenefitConcept] = useState<string>(
+    'Asignación social de carácter no remunerativo otorgada para la protección de la calidad de vida del trabajador y su familia, amparada en el Artículo 105 de la LOTTT, Artículo 73 del RLOT y doctrina vinculante de la Sala de Casación Social del TSJ (Sentencia N° 523 - Caso INDULAC).'
+  );
+
   // Success state
   const [justEmitted, setJustEmitted] = useState<BenefitReceipt | null>(null);
   const [batchGeneratedCount, setBatchGeneratedCount] = useState<number | null>(null);
@@ -104,6 +112,17 @@ export const ReceiptGenerator: React.FC<ReceiptGeneratorProps> = ({
         return {
           title: 'Aporte para Capacitación y Desarrollo Laboral',
           desc: 'Asignación no salarial para formación técnica y desarrollo profesional amparada en el Art. 105 Numeral 6 de la LOTTT.',
+          method: 'transferencia_independiente' as PaymentMethod,
+        };
+      case 'otro_personalizado':
+      default:
+        return {
+          title:
+            customBenefitTitle.trim() ||
+            'Beneficio Social No Remunerativo Personalizado (Art. 105 LOTTT)',
+          desc:
+            customBenefitConcept.trim() ||
+            'Beneficio social de carácter no remunerativo otorgado conforme al Artículo 105 de la LOTTT y Sentencia N° 523 de la Sala de Casación Social del TSJ.',
           method: 'transferencia_independiente' as PaymentMethod,
         };
     }
@@ -416,6 +435,11 @@ export const ReceiptGenerator: React.FC<ReceiptGeneratorProps> = ({
                   name: 'Becas / Capacitación Laboral',
                   badge: 'Art. 105 #6 LOTTT',
                 },
+                {
+                  id: 'otro_personalizado',
+                  name: '➕ Otra Categoría / Beneficio Personalizado (RRHH)',
+                  badge: 'Editable Art. 105 LOTTT',
+                },
               ].map((cat) => (
                 <button
                   key={cat.id}
@@ -423,6 +447,8 @@ export const ReceiptGenerator: React.FC<ReceiptGeneratorProps> = ({
                   id={`btn-cat-${cat.id}`}
                   onClick={() => handleCategorySelect(cat.id as BenefitCategory)}
                   className={`p-3 rounded-lg border text-left transition cursor-pointer flex flex-col justify-between ${
+                    cat.id === 'otro_personalizado' ? 'sm:col-span-2' : ''
+                  } ${
                     category === cat.id
                       ? 'border-indigo-400 bg-indigo-50/80 text-indigo-950 font-bold shadow-2xs'
                       : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-white'
@@ -433,6 +459,48 @@ export const ReceiptGenerator: React.FC<ReceiptGeneratorProps> = ({
                 </button>
               ))}
             </div>
+
+            {category === 'otro_personalizado' && (
+              <div className="mt-3 p-4 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-extrabold text-indigo-950 uppercase tracking-wider">
+                    Configuración de Nueva Categoría / Beneficio Personalizado (RRHH)
+                  </span>
+                  <span className="text-[10px] font-mono bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded font-bold">
+                    Art. 105 LOTTT
+                  </span>
+                </div>
+                <p className="text-[11px] text-indigo-900/80 leading-relaxed">
+                  Introduzca el <strong>Nombre del Beneficio</strong> y el <strong>Concepto Legal</strong> que aparecerán impresos en el comprobante y registrados en la bóveda.
+                </p>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Nombre del Beneficio (Título del Concepto):
+                  </label>
+                  <input
+                    id="input-custom-benefit-title"
+                    type="text"
+                    value={customBenefitTitle}
+                    onChange={(e) => setCustomBenefitTitle(e.target.value)}
+                    placeholder="Ej. Bono de Guardería Infantil / Asignación de Conectividad..."
+                    className="w-full bg-white border border-indigo-300 rounded-lg px-3 py-2 text-xs text-slate-900 font-semibold focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Concepto Detallado y Fundamentación No Remunerativa (Art. 105 LOTTT):
+                  </label>
+                  <textarea
+                    id="input-custom-benefit-concept"
+                    rows={3}
+                    value={customBenefitConcept}
+                    onChange={(e) => setCustomBenefitConcept(e.target.value)}
+                    placeholder="Describa el concepto asistencial y su fundamentación en el Art. 105 de la LOTTT..."
+                    className="w-full bg-white border border-indigo-300 rounded-lg px-3 py-2 text-xs text-slate-800 leading-relaxed focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* 3. Amounts in USD and Bs. with BCV dynamic sync */}

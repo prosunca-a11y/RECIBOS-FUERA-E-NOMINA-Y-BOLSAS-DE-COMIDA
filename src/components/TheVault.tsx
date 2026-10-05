@@ -19,6 +19,7 @@ import {
   Layers,
   CheckSquare,
   Square,
+  Cloud,
 } from 'lucide-react';
 
 interface TheVaultProps {
@@ -30,6 +31,9 @@ interface TheVaultProps {
   onToggleThumbprint: (id: string) => void;
   onOpenBatchPrint?: (receipts: BenefitReceipt[]) => void;
   onMarkBatchSigned?: (ids: string[]) => void;
+  onSaveReceiptToCloud?: (receipt: BenefitReceipt) => Promise<void>;
+  onNavigateTab?: (tab: string) => void;
+  cloudFilesCount?: number;
 }
 
 export const TheVault: React.FC<TheVaultProps> = ({
@@ -41,6 +45,9 @@ export const TheVault: React.FC<TheVaultProps> = ({
   onToggleThumbprint,
   onOpenBatchPrint,
   onMarkBatchSigned,
+  onSaveReceiptToCloud,
+  onNavigateTab,
+  cloudFilesCount = 0,
 }) => {
   const [filterTab, setFilterTab] = useState<'all' | 'pending-transfer' | 'pending-signature' | 'archived'>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -170,6 +177,18 @@ export const TheVault: React.FC<TheVaultProps> = ({
             <Download className="w-4 h-4" />
             <span>Libro Excel (.xlsx)</span>
           </button>
+          {onNavigateTab && (
+            <button
+              id="btn-open-cloud-vault"
+              type="button"
+              onClick={() => onNavigateTab('cloud')}
+              className="flex items-center space-x-1.5 px-3.5 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold transition shadow-2xs cursor-pointer"
+              title="Abrir Base de Datos y Bóveda de Archivos en la Nube Firebase"
+            >
+              <Cloud className="w-4 h-4" />
+              <span>Nube Firebase ({cloudFilesCount})</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -468,6 +487,27 @@ export const TheVault: React.FC<TheVaultProps> = ({
                         >
                           Word
                         </button>
+                        {onSaveReceiptToCloud && (
+                          <button
+                            id={`btn-cloud-vault-${r.id}`}
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                await onSaveReceiptToCloud(r);
+                                setStatusBanner(`¡Comprobante ${r.receiptNumber} guardado como archivo en la Nube de Firebase!`);
+                                setTimeout(() => setStatusBanner(null), 4000);
+                              } catch (err: unknown) {
+                                const msg = err instanceof Error ? err.message : String(err);
+                                setStatusBanner(`Aviso Nube Firebase: ${msg}`);
+                                setTimeout(() => setStatusBanner(null), 5000);
+                              }
+                            }}
+                            className="px-2 py-1 bg-sky-50 text-sky-700 hover:bg-sky-100 rounded font-semibold text-[11px] transition cursor-pointer"
+                            title="Guardar expediente de este recibo en la Bóveda de Archivos de Firebase"
+                          >
+                            Nube
+                          </button>
+                        )}
                         <button
                           id={`btn-view-vault-${r.id}`}
                           type="button"

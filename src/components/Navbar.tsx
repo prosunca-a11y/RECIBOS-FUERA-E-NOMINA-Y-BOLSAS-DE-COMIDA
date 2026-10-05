@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { CompanyConfig } from '../types';
-import { Shield, FileText, ShoppingBag, FileCheck, Layers, Award, Users, RefreshCw, Check, Building2, ChevronDown, Plus, Server } from 'lucide-react';
+import { Shield, FileText, ShoppingBag, FileCheck, Layers, Award, Users, RefreshCw, Check, Building2, ChevronDown, Plus, Server, Cloud } from 'lucide-react';
 
 interface NavbarProps {
   currentTab: string;
@@ -9,8 +9,11 @@ interface NavbarProps {
   companies?: CompanyConfig[];
   onSelectCompany?: (comp: CompanyConfig) => void;
   onUpdateBCVRate: (newRate: number) => void;
+  onSyncBCVFromNominus?: () => Promise<void>;
   pendingThumbprintsCount: number;
   nominusStatus?: 'connected' | 'disconnected' | 'syncing' | 'error';
+  firebaseConnected?: boolean;
+  cloudFilesCount?: number;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -20,18 +23,32 @@ export const Navbar: React.FC<NavbarProps> = ({
   companies = [],
   onSelectCompany,
   onUpdateBCVRate,
+  onSyncBCVFromNominus,
   pendingThumbprintsCount,
   nominusStatus = 'disconnected',
+  firebaseConnected = false,
+  cloudFilesCount = 0,
 }) => {
   const [isEditingBCV, setIsEditingBCV] = useState(false);
   const [rateInput, setRateInput] = useState(company.tasaBCV.toString());
   const [showCompanyMenu, setShowCompanyMenu] = useState(false);
+  const [isSyncingBCV, setIsSyncingBCV] = useState(false);
 
   const handleSaveRate = () => {
     const val = parseFloat(rateInput);
     if (!isNaN(val) && val > 0) {
       onUpdateBCVRate(val);
       setIsEditingBCV(false);
+    }
+  };
+
+  const handleSyncBCV = async () => {
+    if (!onSyncBCVFromNominus) return;
+    setIsSyncingBCV(true);
+    try {
+      await onSyncBCVFromNominus();
+    } finally {
+      setIsSyncingBCV(false);
     }
   };
 
@@ -42,6 +59,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'food-basket', label: 'Bolsas de Comida', icon: ShoppingBag },
     { id: 'contracts', label: 'Contrato / Adenda', icon: FileCheck },
     { id: 'vault', label: 'Bóveda y Tríada', icon: Shield, badge: pendingThumbprintsCount },
+    { id: 'cloud', label: 'Nube Firebase', icon: Cloud, badge: cloudFilesCount },
     { id: 'seniat', label: 'Auditoría SENIAT', icon: Award },
     { id: 'employees', label: 'Trabajadores', icon: Users },
     { id: 'nominus', label: 'Conector Nóminus', icon: Server },
@@ -131,7 +149,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        {/* BCV Tasa Widget - Pastel Mint */}
+        {/* BCV Tasa Widget - Pastel Mint + Nominus Sync */}
         <div className="flex items-center space-x-2 bg-emerald-50/70 border border-emerald-200/80 rounded-lg px-3 py-1.5 shadow-2xs">
           <span className="text-emerald-900/80 text-[11px] font-medium">Tasa Oficial BCV:</span>
           {isEditingBCV ? (
@@ -167,10 +185,23 @@ export const Navbar: React.FC<NavbarProps> = ({
                   setIsEditingBCV(true);
                 }}
                 className="text-emerald-700 hover:text-emerald-950 p-0.5 cursor-pointer transition"
-                title="Ajustar Tasa Oficial BCV"
+                title="Ajustar Tasa Oficial BCV manualmente"
               >
                 <RefreshCw className="w-3 h-3" />
               </button>
+              {onSyncBCVFromNominus && (
+                <button
+                  id="btn-sync-bcv-nominus"
+                  type="button"
+                  onClick={handleSyncBCV}
+                  disabled={isSyncingBCV}
+                  className="px-1.5 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] font-bold flex items-center gap-1 cursor-pointer transition"
+                  title="Sincronizar Tasa Oficial BCV desde el sistema de nómina Nóminus"
+                >
+                  <RefreshCw className={`w-2.5 h-2.5 ${isSyncingBCV ? 'animate-spin' : ''}`} />
+                  <span>Sinc. Nóminus</span>
+                </button>
+              )}
             </div>
           )}
           <span className="text-[10px] text-emerald-700/80 hidden sm:inline">
@@ -178,22 +209,41 @@ export const Navbar: React.FC<NavbarProps> = ({
           </span>
         </div>
 
-        {/* Nominus Integration Quick Button */}
-        <button
-          id="btn-nav-nominus-status"
-          type="button"
-          onClick={() => setCurrentTab('nominus')}
-          className="flex items-center space-x-1.5 px-3 py-1.5 bg-indigo-50/80 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 rounded-lg text-xs font-bold transition cursor-pointer shadow-2xs"
-          title="Abrir Conector e Integración con Nóminus"
-        >
-          <Server className="w-3.5 h-3.5 text-indigo-600" />
-          <span>Nóminus</span>
-          <span
-            className={`w-2 h-2 rounded-full ${
-              nominusStatus === 'connected' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'
-            }`}
-          />
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Firebase Cloud Quick Button */}
+          <button
+            id="btn-nav-firebase-cloud"
+            type="button"
+            onClick={() => setCurrentTab('cloud')}
+            className="flex items-center space-x-1.5 px-3 py-1.5 bg-sky-50/80 hover:bg-sky-100 text-sky-800 border border-sky-200/80 rounded-lg text-xs font-bold transition cursor-pointer shadow-2xs"
+            title="Abrir Base de Datos y Bóveda de Archivos en la Nube Firebase"
+          >
+            <Cloud className="w-3.5 h-3.5 text-sky-600" />
+            <span>Nube Firebase</span>
+            <span
+              className={`w-2 h-2 rounded-full ${
+                firebaseConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'
+              }`}
+            />
+          </button>
+
+          {/* Nominus Integration Quick Button */}
+          <button
+            id="btn-nav-nominus-status"
+            type="button"
+            onClick={() => setCurrentTab('nominus')}
+            className="flex items-center space-x-1.5 px-3 py-1.5 bg-indigo-50/80 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 rounded-lg text-xs font-bold transition cursor-pointer shadow-2xs"
+            title="Abrir Conector e Integración con Nóminus"
+          >
+            <Server className="w-3.5 h-3.5 text-indigo-600" />
+            <span>Nóminus</span>
+            <span
+              className={`w-2 h-2 rounded-full ${
+                nominusStatus === 'connected' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'
+              }`}
+            />
+          </button>
+        </div>
       </div>
 
       {/* Main Tab Navigation - Soft Pastel Pill Tabs */}

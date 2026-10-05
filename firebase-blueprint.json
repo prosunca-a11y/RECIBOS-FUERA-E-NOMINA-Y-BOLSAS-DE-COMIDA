@@ -1,0 +1,693 @@
+{
+  "entities": {
+    "CompanyDoc": {
+      "title": "CompanyDoc",
+      "description": "Configuración legal y fiscal de una empresa registrada en el sistema y su tasa oficial BCV.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "UID del usuario propietario en Firebase Auth.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "companyId": {
+          "type": "string",
+          "description": "Identificador único de la empresa.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "razonSocial": {
+          "type": "string",
+          "description": "Razón social de la empresa.",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "rif": {
+          "type": "string",
+          "description": "Registro de Información Fiscal (RIF).",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "direccionFiscal": {
+          "type": "string",
+          "description": "Dirección fiscal de la empresa.",
+          "maxLength": 500
+        },
+        "ciudad": {
+          "type": "string",
+          "description": "Ciudad de domicilio fiscal.",
+          "maxLength": 100
+        },
+        "registroMercantil": {
+          "type": "string",
+          "description": "Datos del Registro Mercantil.",
+          "maxLength": 300
+        },
+        "representanteLegal": {
+          "type": "string",
+          "description": "Nombre del representante legal.",
+          "maxLength": 150
+        },
+        "cedulaRepresentante": {
+          "type": "string",
+          "description": "Cédula del representante legal.",
+          "maxLength": 40
+        },
+        "cargoRepresentante": {
+          "type": "string",
+          "description": "Cargo del representante legal.",
+          "maxLength": 100
+        },
+        "tasaBCV": {
+          "type": "number",
+          "description": "Tasa oficial BCV vigente (Bs./USD)."
+        },
+        "fechaTasaBCV": {
+          "type": "string",
+          "description": "Fecha de vigencia de la tasa BCV.",
+          "maxLength": 30
+        },
+        "telefono": {
+          "type": "string",
+          "description": "Teléfono de contacto.",
+          "maxLength": 50
+        },
+        "email": {
+          "type": "string",
+          "description": "Correo electrónico corporativo.",
+          "maxLength": 150
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Fecha de creación en el servidor."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Fecha de última actualización en el servidor."
+        }
+      },
+      "required": [
+        "ownerId",
+        "companyId",
+        "razonSocial",
+        "rif",
+        "direccionFiscal",
+        "ciudad",
+        "registroMercantil",
+        "representanteLegal",
+        "cedulaRepresentante",
+        "cargoRepresentante",
+        "tasaBCV",
+        "fechaTasaBCV",
+        "telefono",
+        "email",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "EmployeeDoc": {
+      "title": "EmployeeDoc",
+      "description": "Ficha de trabajador vinculada a una empresa para emisión de beneficios no remunerativos Art. 105 LOTTT.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "UID del usuario propietario en Firebase Auth.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "employeeId": {
+          "type": "string",
+          "description": "Identificador único del trabajador.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "companyId": {
+          "type": "string",
+          "description": "ID de la empresa empleadora.",
+          "maxLength": 128
+        },
+        "cedula": {
+          "type": "string",
+          "description": "Cédula de identidad del trabajador.",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "fullName": {
+          "type": "string",
+          "description": "Nombre completo del trabajador.",
+          "minLength": 1,
+          "maxLength": 150
+        },
+        "cargo": {
+          "type": "string",
+          "description": "Cargo laboral.",
+          "maxLength": 120
+        },
+        "departamento": {
+          "type": "string",
+          "description": "Departamento o unidad.",
+          "maxLength": 120
+        },
+        "salarioBaseBs": {
+          "type": "number",
+          "description": "Salario base mensual en Bolívares."
+        },
+        "isDirector": {
+          "type": "boolean",
+          "description": "Indica si es personal de dirección."
+        },
+        "banco": {
+          "type": "string",
+          "description": "Entidad bancaria.",
+          "maxLength": 120
+        },
+        "cuentaBancaria": {
+          "type": "string",
+          "description": "Número de cuenta bancaria.",
+          "maxLength": 60
+        },
+        "fechaIngreso": {
+          "type": "string",
+          "description": "Fecha de ingreso a la empresa.",
+          "maxLength": 30
+        },
+        "direccion": {
+          "type": "string",
+          "description": "Dirección de habitación.",
+          "maxLength": 400
+        },
+        "nacionalidad": {
+          "type": "string",
+          "description": "Nacionalidad del trabajador.",
+          "maxLength": 60
+        },
+        "estadoCivil": {
+          "type": "string",
+          "description": "Estado civil.",
+          "maxLength": 60
+        },
+        "adendaFirmada": {
+          "type": "boolean",
+          "description": "Indica si posee adenda contractual firmada."
+        },
+        "fechaFirmaAdenda": {
+          "type": "string",
+          "description": "Fecha de suscripción de la adenda.",
+          "maxLength": 30
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp de creación."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp de actualización."
+        }
+      },
+      "required": [
+        "ownerId",
+        "employeeId",
+        "companyId",
+        "cedula",
+        "fullName",
+        "cargo",
+        "departamento",
+        "salarioBaseBs",
+        "isDirector",
+        "banco",
+        "cuentaBancaria",
+        "fechaIngreso",
+        "direccion",
+        "nacionalidad",
+        "estadoCivil",
+        "adendaFirmada",
+        "fechaFirmaAdenda",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ReceiptDoc": {
+      "title": "ReceiptDoc",
+      "description": "Comprobante de beneficio social no remunerativo Art. 105 LOTTT.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "UID del usuario propietario.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "receiptId": {
+          "type": "string",
+          "description": "ID único del recibo.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "companyId": {
+          "type": "string",
+          "description": "ID de la empresa emisora.",
+          "maxLength": 128
+        },
+        "receiptNumber": {
+          "type": "string",
+          "description": "Número correlativo del comprobante.",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "employeeId": {
+          "type": "string",
+          "description": "ID del trabajador beneficiario.",
+          "maxLength": 128
+        },
+        "employeeName": {
+          "type": "string",
+          "description": "Nombre del trabajador.",
+          "maxLength": 150
+        },
+        "employeeCedula": {
+          "type": "string",
+          "description": "Cédula del trabajador.",
+          "maxLength": 40
+        },
+        "employeeCargo": {
+          "type": "string",
+          "description": "Cargo del trabajador.",
+          "maxLength": 120
+        },
+        "category": {
+          "type": "string",
+          "description": "Categoría del beneficio Art. 105 LOTTT.",
+          "maxLength": 60
+        },
+        "conceptTitle": {
+          "type": "string",
+          "description": "Título del concepto o nombre del beneficio.",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "conceptDescription": {
+          "type": "string",
+          "description": "Fundamentación legal y descripción del concepto.",
+          "maxLength": 2000
+        },
+        "amountUSD": {
+          "type": "number",
+          "description": "Monto referencial en USD."
+        },
+        "tasaBCV": {
+          "type": "number",
+          "description": "Tasa oficial BCV aplicada."
+        },
+        "amountBs": {
+          "type": "number",
+          "description": "Monto en Bolívares."
+        },
+        "paymentMethod": {
+          "type": "string",
+          "description": "Modalidad de pago o entrega.",
+          "maxLength": 60
+        },
+        "bankName": {
+          "type": "string",
+          "description": "Banco de dispersión.",
+          "maxLength": 120
+        },
+        "referenceNumber": {
+          "type": "string",
+          "description": "Referencia bancaria.",
+          "maxLength": 100
+        },
+        "issueDate": {
+          "type": "string",
+          "description": "Fecha de emisión.",
+          "maxLength": 30
+        },
+        "coveragePeriod": {
+          "type": "string",
+          "description": "Período cubierto.",
+          "maxLength": 80
+        },
+        "grocerySummary": {
+          "type": "string",
+          "description": "Detalle serializado de rubros de alimentos en caso de bolsa de comida.",
+          "maxLength": 2000
+        },
+        "clinicalInvoiceNumber": {
+          "type": "string",
+          "description": "Número de factura clínica para gastos médicos.",
+          "maxLength": 80
+        },
+        "clinicalInvoiceRIF": {
+          "type": "string",
+          "description": "RIF del centro médico.",
+          "maxLength": 40
+        },
+        "patientName": {
+          "type": "string",
+          "description": "Nombre del paciente atendido.",
+          "maxLength": 150
+        },
+        "patientRelation": {
+          "type": "string",
+          "description": "Parentesco del paciente.",
+          "maxLength": 80
+        },
+        "triadStatus": {
+          "type": "string",
+          "description": "Estado en la tríada de control.",
+          "maxLength": 40
+        },
+        "dateTransferred": {
+          "type": "string",
+          "description": "Fecha de transferencia.",
+          "maxLength": 30
+        },
+        "dateArchivedPhysical": {
+          "type": "string",
+          "description": "Fecha de archivo físico.",
+          "maxLength": 30
+        },
+        "archivedNotes": {
+          "type": "string",
+          "description": "Notas de auditoría.",
+          "maxLength": 500
+        },
+        "hasWetThumbprint": {
+          "type": "boolean",
+          "description": "Posee huella dactilar húmeda."
+        },
+        "hasPhysicalSignature": {
+          "type": "boolean",
+          "description": "Posee firma física autógrafa."
+        },
+        "salarioBaseBsAtTime": {
+          "type": "number",
+          "description": "Salario base del trabajador al momento de emisión."
+        },
+        "desalarizationRiskRatio": {
+          "type": "number",
+          "description": "Ratio gamma de riesgo de desalarización."
+        },
+        "riskLevel": {
+          "type": "string",
+          "description": "Nivel de riesgo (verde, amarillo, rojo).",
+          "maxLength": 20
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp de creación."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp de actualización."
+        }
+      },
+      "required": [
+        "ownerId",
+        "receiptId",
+        "companyId",
+        "receiptNumber",
+        "employeeId",
+        "employeeName",
+        "employeeCedula",
+        "employeeCargo",
+        "category",
+        "conceptTitle",
+        "conceptDescription",
+        "amountUSD",
+        "tasaBCV",
+        "amountBs",
+        "paymentMethod",
+        "bankName",
+        "referenceNumber",
+        "issueDate",
+        "coveragePeriod",
+        "grocerySummary",
+        "clinicalInvoiceNumber",
+        "clinicalInvoiceRIF",
+        "patientName",
+        "patientRelation",
+        "triadStatus",
+        "dateTransferred",
+        "dateArchivedPhysical",
+        "archivedNotes",
+        "hasWetThumbprint",
+        "hasPhysicalSignature",
+        "salarioBaseBsAtTime",
+        "desalarizationRiskRatio",
+        "riskLevel",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "InvoiceDoc": {
+      "title": "InvoiceDoc",
+      "description": "Factura corporativa de compra de alimentos para soporte de auditoría SENIAT.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "UID del usuario propietario.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "invoiceId": {
+          "type": "string",
+          "description": "ID único de la factura.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "companyId": {
+          "type": "string",
+          "description": "ID de la empresa compradora.",
+          "maxLength": 128
+        },
+        "invoiceNumber": {
+          "type": "string",
+          "description": "Número de factura fiscal.",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "providerName": {
+          "type": "string",
+          "description": "Razón social del proveedor.",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "providerRIF": {
+          "type": "string",
+          "description": "RIF del proveedor.",
+          "maxLength": 40
+        },
+        "invoiceDate": {
+          "type": "string",
+          "description": "Fecha de emisión de la factura.",
+          "maxLength": 30
+        },
+        "totalAmountBs": {
+          "type": "number",
+          "description": "Monto total en Bolívares."
+        },
+        "totalAmountUSD": {
+          "type": "number",
+          "description": "Monto total equivalente en USD."
+        },
+        "totalBasketsCovered": {
+          "type": "number",
+          "description": "Cantidad de bolsas cubiertas."
+        },
+        "itemsDescription": {
+          "type": "string",
+          "description": "Descripción de rubros facturados.",
+          "maxLength": 2000
+        },
+        "hasFiscalControlSENIAT": {
+          "type": "boolean",
+          "description": "Indica si posee número de control fiscal SENIAT."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp de creación."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp de actualización."
+        }
+      },
+      "required": [
+        "ownerId",
+        "invoiceId",
+        "companyId",
+        "invoiceNumber",
+        "providerName",
+        "providerRIF",
+        "invoiceDate",
+        "totalAmountBs",
+        "totalAmountUSD",
+        "totalBasketsCovered",
+        "itemsDescription",
+        "hasFiscalControlSENIAT",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "CloudFileDoc": {
+      "title": "CloudFileDoc",
+      "description": "Archivo o expediente digitalizado almacenado en la Bóveda en la Nube de Firebase.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "UID del usuario propietario.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "fileId": {
+          "type": "string",
+          "description": "ID único del archivo en la nube.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "companyId": {
+          "type": "string",
+          "description": "ID de la empresa asociada.",
+          "maxLength": 128
+        },
+        "companyRif": {
+          "type": "string",
+          "description": "RIF de la empresa asociada.",
+          "maxLength": 40
+        },
+        "companyName": {
+          "type": "string",
+          "description": "Razón social de la empresa asociada.",
+          "maxLength": 200
+        },
+        "fileName": {
+          "type": "string",
+          "description": "Nombre del archivo almacenado.",
+          "minLength": 1,
+          "maxLength": 250
+        },
+        "fileType": {
+          "type": "string",
+          "description": "Categoría documental del archivo.",
+          "enum": [
+            "recibo_pdf",
+            "recibo_word",
+            "adenda_contrato",
+            "factura_seniat",
+            "expediente_escaneado",
+            "reporte_excel",
+            "otro_documento"
+          ],
+          "maxLength": 60
+        },
+        "mimeType": {
+          "type": "string",
+          "description": "Tipo MIME del archivo.",
+          "maxLength": 120
+        },
+        "fileSize": {
+          "type": "number",
+          "description": "Tamaño del archivo en bytes."
+        },
+        "relatedReceiptId": {
+          "type": "string",
+          "description": "ID o número de comprobante relacionado.",
+          "maxLength": 128
+        },
+        "relatedEmployeeName": {
+          "type": "string",
+          "description": "Nombre del trabajador relacionado.",
+          "maxLength": 150
+        },
+        "relatedEmployeeCedula": {
+          "type": "string",
+          "description": "Cédula del trabajador relacionado.",
+          "maxLength": 40
+        },
+        "description": {
+          "type": "string",
+          "description": "Notas o descripción probatoria del archivo.",
+          "maxLength": 1000
+        },
+        "dataUrl": {
+          "type": "string",
+          "description": "Contenido codificado en Base64 / Data URL para descarga directa.",
+          "maxLength": 900000
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp de creación en la nube."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp de actualización en la nube."
+        }
+      },
+      "required": [
+        "ownerId",
+        "fileId",
+        "companyId",
+        "companyRif",
+        "companyName",
+        "fileName",
+        "fileType",
+        "mimeType",
+        "fileSize",
+        "relatedReceiptId",
+        "relatedEmployeeName",
+        "relatedEmployeeCedula",
+        "description",
+        "dataUrl",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/companies/{companyId}": {
+      "schema": { "$ref": "#/entities/CompanyDoc" },
+      "description": "Colección de empresas multiempresa sincronizadas por usuario."
+    },
+    "/employees/{employeeId}": {
+      "schema": { "$ref": "#/entities/EmployeeDoc" },
+      "description": "Colección de trabajadores sincronizados por usuario."
+    },
+    "/receipts/{receiptId}": {
+      "schema": { "$ref": "#/entities/ReceiptDoc" },
+      "description": "Colección de comprobantes de beneficios Art. 105 LOTTT emitidos y respaldados en la nube."
+    },
+    "/invoices/{invoiceId}": {
+      "schema": { "$ref": "#/entities/InvoiceDoc" },
+      "description": "Colección de facturas corporativas de alimentos para auditoría SENIAT."
+    },
+    "/cloud_files/{fileId}": {
+      "schema": { "$ref": "#/entities/CloudFileDoc" },
+      "description": "Bóveda de archivos digitales, comprobantes firmados escaneados, PDFs, contratos y respaldos en la nube."
+    }
+  }
+}

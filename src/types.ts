@@ -191,4 +191,35 @@ export interface NominusSyncResult {
   timestamp: string;
   companies: CompanyConfig[];
   employees: Employee[];
+  tasaBCV?: number;
+  fechaTasaBCV?: string;
 }
+
+export type CloudFileType =
+  | 'recibo_pdf'
+  | 'recibo_word'
+  | 'adenda_contrato'
+  | 'factura_seniat'
+  | 'expediente_escaneado'
+  | 'reporte_excel'
+  | 'otro_documento';
+
+export interface CloudArchiveFile {
+  id: string;
+  ownerId: string;
+  companyId: string;
+  companyRif: string;
+  companyName: string;
+  fileName: string;
+  fileType: CloudFileType;
+  mimeType: string;
+  fileSize: number;
+  relatedReceiptId?: string;
+  relatedEmployeeName?: string;
+  relatedEmployeeCedula?: string;
+  description: string;
+  dataUrl: string;
+  createdAt: string;
+  updatedAt: string;
+}
+

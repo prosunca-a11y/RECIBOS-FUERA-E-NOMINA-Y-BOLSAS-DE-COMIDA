@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { BenefitReceipt, CompanyConfig, CorporateFoodPurchaseInvoice, Employee, TriadStatus, NominusConfig, NominusSyncResult } from './types';
+import React, { useState, useEffect, useRef } from 'react';
+import { BenefitReceipt, CloudArchiveFile, CompanyConfig, CorporateFoodPurchaseInvoice, Employee, TriadStatus, NominusConfig, NominusSyncResult } from './types';
 import {
   INITIAL_COMPANIES,
   INITIAL_COMPANY,
@@ -7,6 +7,21 @@ import {
   INITIAL_RECEIPTS,
   INITIAL_CORPORATE_INVOICES,
 } from './data/initialData';
+import {
+  auth,
+  User,
+  onAuthStateChanged,
+  subscribeToUserCloudData,
+  saveCompanyToCloud,
+  deleteCompanyFromCloud,
+  saveEmployeeToCloud,
+  deleteEmployeeFromCloud,
+  saveReceiptToCloud,
+  saveInvoiceToCloud,
+  archiveReceiptDocumentToCloud,
+  syncAllLocalDataToCloud,
+} from './firebase';
+import { fetchNominusBCVRate } from './utils/nominusBridge';
 import { Navbar } from './components/Navbar';
 import { Dashboard } from './components/Dashboard';
 import { CompaniesManager } from './components/CompaniesManager';
@@ -14,6 +29,7 @@ import { ReceiptGenerator } from './components/ReceiptGenerator';
 import { FoodBasketModule } from './components/FoodBasketModule';
 import { ContractGenerator } from './components/ContractGenerator';
 import { TheVault } from './components/TheVault';
+import { CloudDatabasePanel } from './components/CloudDatabasePanel';
 import { SeniatAudit } from './components/SeniatAudit';
 import { EmployeesManager } from './components/EmployeesManager';
 import { NominusConnector } from './components/NominusConnector';
@@ -95,6 +111,64 @@ export default function App() {
   const [isPreviewModal, setIsPreviewModal] = useState<boolean>(false);
   const [batchPrintReceipts, setBatchPrintReceipts] = useState<BenefitReceipt[] | null>(null);
 
+  // Firebase Auth & Cloud Files State
+  const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
+  const [authReady, setAuthReady] = useState<boolean>(false);
+  const [cloudFiles, setCloudFiles] = useState<CloudArchiveFile[]>([]);
+  const hasSeededCloudRef = useRef<boolean>(false);
+
+  // Track Firebase Auth State
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (u) => {
+      setFirebaseUser(u);
+      setAuthReady(true);
+      if (!u) {
+        setCloudFiles([]);
+        hasSeededCloudRef.current = false;
+      }
+    });
+    return () => unsub();
+  }, []);
+
+  // Attach Firestore Real-Time Listeners when authenticated
+  useEffect(() => {
+    if (!authReady || !firebaseUser) return;
+
+    const unsubCloud = subscribeToUserCloudData(firebaseUser.uid, {
+      onCompanies: (cloudCompanies) => {
+        if (cloudCompanies.length > 0) {
+          setCompanies(cloudCompanies);
+          setCompany((prev) => cloudCompanies.find((c) => c.id === prev.id) || cloudCompanies[0]);
+        } else if (!hasSeededCloudRef.current) {
+          hasSeededCloudRef.current = true;
+          syncAllLocalDataToCloud({ companies, employees, receipts, invoices }).catch((err) =>
+            console.error('Error seeding initial cloud data:', err)
+          );
+        }
+      },
+      onEmployees: (cloudEmployees) => {
+        if (cloudEmployees.length > 0) {
+          setEmployees(cloudEmployees);
+        }
+      },
+      onReceipts: (cloudReceipts) => {
+        if (cloudReceipts.length > 0) {
+          setReceipts(cloudReceipts);
+        }
+      },
+      onInvoices: (cloudInvoices) => {
+        if (cloudInvoices.length > 0) {
+          setInvoices(cloudInvoices);
+        }
+      },
+      onCloudFiles: (files) => {
+        setCloudFiles(files);
+      },
+    });
+
+    return () => unsubCloud();
+  }, [authReady, firebaseUser]);
+
   // Sync state to localStorage
   useEffect(() => {
     localStorage.setItem('bonos_ve_companies', JSON.stringify(companies));
@@ -121,16 +195,34 @@ export default function App() {
   }, [nominusConfig]);
 
   // Handler: Update BCV Rate
-  const handleUpdateBCVRate = (newRate: number) => {
+  const handleUpdateBCVRate = (newRate: number, fechaOverride?: string) => {
+    const fecha = fechaOverride || new Date().toISOString().split('T')[0];
     setCompany((prev) => {
       const updated = {
         ...prev,
         tasaBCV: newRate,
-        fechaTasaBCV: new Date().toISOString().split('T')[0],
+        fechaTasaBCV: fecha,
       };
-      setCompanies((all) => all.map((c) => (c.id === updated.id ? updated : c)));
+      setCompanies((all) =>
+        all.map((c) => {
+          const updatedComp = { ...c, tasaBCV: newRate, fechaTasaBCV: fecha };
+          saveCompanyToCloud(updatedComp).catch(console.error);
+          return updatedComp;
+        })
+      );
       return updated;
     });
+  };
+
+  // Handler: Synchronize Official BCV Rate with Nominus
+  const handleSyncBCVFromNominus = async () => {
+    const res = await fetchNominusBCVRate(nominusConfig, company.tasaBCV);
+    handleUpdateBCVRate(res.tasaBCV, res.fechaTasaBCV);
+    setNominusConfig((prev) => ({
+      ...prev,
+      status: 'connected',
+      lastSyncTime: new Date().toISOString(),
+    }));
   };
 
   // Handler: Select Company
@@ -148,6 +240,7 @@ export default function App() {
       return [newOrUpdated, ...prev];
     });
     setCompany(newOrUpdated);
+    saveCompanyToCloud(newOrUpdated).catch(console.error);
   };
 
   // Handler: Delete Company
@@ -159,11 +252,16 @@ export default function App() {
       }
       return filtered;
     });
+    deleteCompanyFromCloud(idToDelete).catch(console.error);
   };
 
   // Handler: Add Receipt
   const handleAddReceipt = (newReceipt: BenefitReceipt) => {
     setReceipts((prev) => [newReceipt, ...prev]);
+    saveReceiptToCloud(newReceipt).catch(console.error);
+    if (firebaseUser) {
+      archiveReceiptDocumentToCloud(newReceipt, company).catch(console.error);
+    }
   };
 
   // Handler: Toggle Thumbprint
@@ -184,6 +282,7 @@ export default function App() {
           if (selectedReceipt && selectedReceipt.id === id) {
             setSelectedReceipt(updated);
           }
+          saveReceiptToCloud(updated).catch(console.error);
           return updated;
         }
         return r;
@@ -206,6 +305,7 @@ export default function App() {
           if (selectedReceipt && selectedReceipt.id === id) {
             setSelectedReceipt(updated);
           }
+          saveReceiptToCloud(updated).catch(console.error);
           return updated;
         }
         return r;
@@ -219,6 +319,7 @@ export default function App() {
       setSelectedReceipt(updated);
     }
     setReceipts((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+    saveReceiptToCloud(updated).catch(console.error);
   };
 
   // Handler: Preview Draft Receipt from FoodBasketModule
@@ -241,16 +342,19 @@ export default function App() {
   // Handler: Add Employee
   const handleAddEmployee = (newEmp: Employee) => {
     setEmployees((prev) => [...prev, newEmp]);
+    saveEmployeeToCloud(newEmp).catch(console.error);
   };
 
   // Handler: Delete Employee
   const handleDeleteEmployee = (empId: string) => {
     setEmployees((prev) => prev.filter((e) => e.id !== empId));
+    deleteEmployeeFromCloud(empId).catch(console.error);
   };
 
   // Handler: Update Employee
   const handleUpdateEmployee = (updatedEmp: Employee) => {
     setEmployees((prev) => prev.map((e) => (e.id === updatedEmp.id ? updatedEmp : e)));
+    saveEmployeeToCloud(updatedEmp).catch(console.error);
   };
 
   // Handler: Update Multiple Employees
@@ -259,11 +363,13 @@ export default function App() {
       const map = new Map(updatedList.map((e) => [e.id, e]));
       return prev.map((e) => map.get(e.id) || e);
     });
+    updatedList.forEach((emp) => saveEmployeeToCloud(emp).catch(console.error));
   };
 
   // Handler: Add Corporate Purchase Invoice
   const handleAddInvoice = (newInv: CorporateFoodPurchaseInvoice) => {
     setInvoices((prev) => [newInv, ...prev]);
+    saveInvoiceToCloud(newInv).catch(console.error);
   };
 
   // Handler: Open Batch Print Modal
@@ -276,28 +382,39 @@ export default function App() {
     const idSet = new Set(ids);
     const today = new Date().toISOString().split('T')[0];
     setReceipts((prev) =>
-      prev.map((r) =>
-        idSet.has(r.id)
-          ? {
-              ...r,
-              hasWetThumbprint: true,
-              hasPhysicalSignature: true,
-              triadStatus: 'archivado',
-              dateArchivedPhysical: today,
-            }
-          : r
-      )
+      prev.map((r) => {
+        if (idSet.has(r.id)) {
+          const updated: BenefitReceipt = {
+            ...r,
+            hasWetThumbprint: true,
+            hasPhysicalSignature: true,
+            triadStatus: 'archivado',
+            dateArchivedPhysical: today,
+          };
+          saveReceiptToCloud(updated).catch(console.error);
+          return updated;
+        }
+        return r;
+      })
     );
   };
 
   // Handler: Sync data from Nominus
   const handleSyncNominusData = (result: NominusSyncResult) => {
+    // 0. Sync BCV Rate if returned by Nominus
+    if (result.tasaBCV && result.tasaBCV > 0) {
+      handleUpdateBCVRate(result.tasaBCV, result.fechaTasaBCV);
+    }
+
     // 1. Merge or add companies from Nominus
     if (result.companies && result.companies.length > 0) {
       setCompanies((prev) => {
         const compMap = new Map<string, CompanyConfig>();
         prev.forEach((c) => compMap.set(c.rif.toUpperCase().trim(), c));
-        result.companies.forEach((c) => compMap.set(c.rif.toUpperCase().trim(), c));
+        result.companies.forEach((c) => {
+          compMap.set(c.rif.toUpperCase().trim(), c);
+          saveCompanyToCloud(c).catch(console.error);
+        });
         return Array.from(compMap.values());
       });
 
@@ -322,14 +439,17 @@ export default function App() {
           const key = `${e.companyId || ''}-${e.cedula.toUpperCase().trim()}`;
           const existing = empMap.get(key);
           if (existing) {
-            empMap.set(key, {
+            const merged = {
               ...e,
               id: existing.id,
               adendaFirmada: existing.adendaFirmada || e.adendaFirmada,
               fechaFirmaAdenda: existing.fechaFirmaAdenda || e.fechaFirmaAdenda,
-            });
+            };
+            empMap.set(key, merged);
+            saveEmployeeToCloud(merged).catch(console.error);
           } else {
             empMap.set(key, e);
+            saveEmployeeToCloud(e).catch(console.error);
           }
         });
 
@@ -400,8 +520,11 @@ export default function App() {
         companies={companies}
         onSelectCompany={handleSelectCompany}
         onUpdateBCVRate={handleUpdateBCVRate}
+        onSyncBCVFromNominus={handleSyncBCVFromNominus}
         pendingThumbprintsCount={pendingThumbprintsCount}
         nominusStatus={nominusConfig.status}
+        firebaseConnected={Boolean(firebaseUser)}
+        cloudFilesCount={cloudFiles.length}
       />
 
       {/* Main Content Area */}
@@ -483,6 +606,22 @@ export default function App() {
             onToggleThumbprint={handleToggleThumbprint}
             onOpenBatchPrint={handleOpenBatchPrint}
             onMarkBatchSigned={handleMarkBatchSigned}
+            onSaveReceiptToCloud={(r) => archiveReceiptDocumentToCloud(r, company)}
+            onNavigateTab={setCurrentTab}
+            cloudFilesCount={cloudFiles.length}
+          />
+        )}
+
+        {currentTab === 'cloud' && (
+          <CloudDatabasePanel
+            user={firebaseUser}
+            authReady={authReady}
+            company={company}
+            companies={companies}
+            employees={employees}
+            receipts={receipts}
+            invoices={invoices}
+            cloudFiles={cloudFiles}
           />
         )}
 
